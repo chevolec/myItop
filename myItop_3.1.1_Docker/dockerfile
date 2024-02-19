@@ -1,0 +1,99 @@
+##################################################################
+#                                                                #
+# Script Name  : iTop 3.1.1 docker                               #
+# Description  : Install itop 3.1.1, mariadb on docker           #
+# Author       : Chevolec                                        #
+# email        : chevolec@gmail.com                              #
+#                                                                #
+##################################################################
+
+FROM phusion/baseimage:jammy-1.0.1 AS base
+MAINTAINER chevolec <chevolec@gmail.com>
+
+ ARG DEBIAN_FRONTEND=noninteractive
+
+##################################################################
+#                                                                #
+# Add repositories                                               #
+#                                                                #
+##################################################################
+
+RUN apt-get update \
+ && apt -y install software-properties-common \
+ && add-apt-repository -y  ppa:ondrej/php \
+ && add-apt-repository -y  ppa:ondrej/apache2 \
+ && add-apt-repository -y  deb https://ppa.launchpadcontent.net/ondrej/apache2/ubuntu/ jammy main \
+ && apt-get update 
+
+##################################################################
+#                                                                #
+# Install dependencies                                           #
+#                                                                #
+##################################################################
+
+RUN apt-get install -y \
+  acl \
+  apache2 \
+  graphviz \
+  libapache2-mod-php8.1 \
+  mariadb-server \
+  php-xml \
+  php8.1 \
+  php8.1-cli \
+  php8.1-common \
+  php8.1-curl \
+  php8.1-fpm \
+  php8.1-gd \
+  php8.1-ldap \
+  php8.1-mbstring \
+  php8.1-mysql \
+  php8.1-soap \
+  php8.1-xml \
+  php8.1-zip \
+  unzip \
+  wget
+
+##################################################################
+#                                                                #
+# Download and Install iTop                                      #
+#                                                                #
+##################################################################
+
+RUN wget https://sourceforge.net/projects/itop/files/itop/3.1.1-1/iTop-3.1.1-1-12561.zip/download \
+  -O /tmp/itop.zip 
+RUN mkdir /var/www/html/itop
+RUN unzip /tmp/itop.zip "web/*" -d /var/www/html/itop
+RUN mv /var/www/html/itop/web/*  /var/www/html
+RUN rm -fr /var/www/html/itop
+RUN rm -fr /var/www/html/index.html
+RUN mkdir /var/www/html/env-production /var/www/html/env-production-build
+
+##################################################################
+#                                                                #
+# Copy config files                                              #
+#                                                                #
+##################################################################
+
+COPY artifacts/scripts/setup-itop-cron.sh /setup-itop-cron.sh
+COPY artifacts/scripts/make-itop-config-writable.sh /make-itop-config-writable.sh
+COPY artifacts/scripts/make-itop-config-read-only.sh /make-itop-config-read-only.sh
+COPY artifacts/scripts/install-toolkit.sh /install-toolkit.sh
+COPY artifacts/apache2.fqdn.conf /etc/apache2/conf-available/fqdn.conf
+COPY artifacts/run.sh /run.sh
+COPY service /etc/service
+
+##################################################################
+#                                                                #
+# Set permissions                                                #
+#                                                                #
+##################################################################
+
+RUN chown www-data:www-data /var/www/html/env-production /var/www/html/env-production-build
+RUN chown -R www-data:www-data /var/www/html
+RUN chmod +x -R /etc/service
+
+VOLUME /var/lib/mysql
+
+EXPOSE 80 3306
+
+CMD ["/run.sh"]

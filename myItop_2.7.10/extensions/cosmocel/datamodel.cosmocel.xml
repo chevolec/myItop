@@ -1,0 +1,1007 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<itop_design xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.0">
+  <constants>
+  </constants>
+  <classes>
+    <class id="UserRequest">
+      <fields>      
+        <field id="needbydate" xsi:type="AttributeDate" _delta="define">
+          <sql>needbydate</sql>
+          <default_value/>
+          <is_null_allowed>true</is_null_allowed>
+        </field>
+        <field id="effort" xsi:type="AttributeInteger" _delta="define">
+          <sql>effort</sql>
+          <default_value/>
+          <is_null_allowed>true</is_null_allowed>
+        </field>
+      </fields>
+      <lifecycle>
+        <highlight_scale>
+          <item id="warning">
+            <rank>1</rank>
+            <color>HIGHLIGHT_CLASS_WARNING</color>
+            <icon>images/user-request-deadline.png</icon>
+          </item>
+          <item id="critical">
+            <rank>2</rank>
+            <color>HIGHLIGHT_CLASS_CRITICAL</color>
+            <icon>images/user-request-escalated.png</icon>
+          </item>
+          <item id="closed">
+            <rank>3</rank>
+            <color>HIGHLIGHT_CLASS_NONE</color>
+            <icon>images/user-request-closed.png</icon>
+          </item>
+        </highlight_scale>
+        <attribute>status</attribute>
+        <stimuli>
+          <stimulus id="ev_assign" xsi:type="StimulusUserAction"/>
+          <stimulus id="ev_reassign" xsi:type="StimulusUserAction"/>
+          <stimulus id="ev_approve" xsi:type="StimulusUserAction"/>
+          <stimulus id="ev_reject" xsi:type="StimulusUserAction"/>
+          <stimulus id="ev_pending" xsi:type="StimulusUserAction"/>
+          <stimulus id="ev_timeout" xsi:type="StimulusInternal"/>
+          <stimulus id="ev_autoresolve" xsi:type="StimulusInternal"/>
+          <stimulus id="ev_autoclose" xsi:type="StimulusInternal"/>
+          <stimulus id="ev_resolve" xsi:type="StimulusUserAction"/>
+          <stimulus id="ev_close" xsi:type="StimulusUserAction"/>
+          <stimulus id="ev_reopen" xsi:type="StimulusUserAction"/>
+          <stimulus id="ev_wait_for_approval" xsi:type="StimulusUserAction"/>
+        </stimuli>
+        <states>
+          <state id="new">
+            <flags>
+              <attribute id="ref">
+                <read_only/>
+              </attribute>
+              <attribute id="org_id">
+                <mandatory/>
+              </attribute>
+              <attribute id="caller_id">
+                <mandatory/>
+              </attribute>
+              <attribute id="team_id">
+                <hidden/>
+              </attribute>
+              <attribute id="agent_id">
+                <hidden/>
+              </attribute>
+              <attribute id="priority">
+                <read_only/>
+              </attribute>
+              <attribute id="start_date">
+                <read_only/>
+              </attribute>
+              <attribute id="last_update">
+                <read_only/>
+              </attribute>
+              <attribute id="close_date">
+                <hidden/>
+              </attribute>
+              <attribute id="approver_id">
+                <hidden/>
+              </attribute>
+              <attribute id="request_type">
+                <read_only/>
+              </attribute>
+              <attribute id="escalation_flag">
+                <hidden/>
+              </attribute>
+              <attribute id="escalation_reason">
+                <hidden/>
+              </attribute>
+              <attribute id="assignment_date">
+                <hidden/>
+              </attribute>
+              <attribute id="resolution_date">
+                <hidden/>
+              </attribute>
+              <attribute id="last_pending_date">
+                <hidden/>
+              </attribute>
+              <attribute id="time_spent">
+                <hidden/>
+              </attribute>
+              <attribute id="resolution_code">
+                <hidden/>
+              </attribute>
+              <attribute id="solution">
+                <hidden/>
+              </attribute>
+              <attribute id="pending_reason">
+                <hidden/>
+              </attribute>
+              <attribute id="user_satisfaction">
+                <hidden/>
+              </attribute>
+              <attribute id="user_comment">
+                <hidden/>
+              </attribute>
+              <attribute id="tto_escalation_deadline">
+                <read_only/>
+              </attribute>
+              <attribute id="sla_tto_passed">
+                <hidden/>
+              </attribute>
+              <attribute id="sla_tto_over">
+                <hidden/>
+              </attribute>
+              <attribute id="sla_ttr_passed">
+                <hidden/>
+              </attribute>
+              <attribute id="ttr_escalation_deadline">
+                <hidden/>
+              </attribute>
+              <attribute id="sla_ttr_over">
+                <hidden/>
+              </attribute>
+            </flags>
+            <transitions>
+              <transition id="ev_assign">
+                <target>assigned</target>
+                <actions>
+                  <action>
+                    <verb>SetCurrentDate</verb>
+                    <params>
+                      <param xsi:type="attcode">assignment_date</param>
+                    </params>
+                  </action>
+                </actions>
+              </transition>
+              <transition id="ev_timeout">
+                <target>escalated_tto</target>
+                <actions/>
+              </transition>
+              <transition id="ev_wait_for_approval">
+                <target>waiting_for_approval</target>
+                <actions/>
+              </transition>
+              <transition id="ev_autoresolve">
+                <target>resolved</target>
+                <actions>
+                  <action>
+                    <verb>SetCurrentDate</verb>
+                    <params>
+                      <param xsi:type="attcode">resolution_date</param>
+                    </params>
+                  </action>
+                  <action>
+                    <verb>SetElapsedTime</verb>
+                    <params>
+                      <param xsi:type="attcode">time_spent</param>
+                      <param xsi:type="attcode">start_date</param>
+                      <param xsi:type="string">DefaultWorkingTimeComputer</param>
+                    </params>
+                  </action>
+                  <action>
+                    <verb>ResolveChildTickets</verb>
+                    <params/>
+                  </action>
+                </actions>
+              </transition>
+            </transitions>
+          </state>
+          <state id="escalated_tto">
+            <highlight>
+              <code>critical</code>
+            </highlight>
+            <inherit_flags_from>new</inherit_flags_from>
+            <flags>
+              <attribute id="team_id"/>
+            </flags>
+            <transitions>
+              <transition id="ev_assign">
+                <target>assigned</target>
+                <actions>
+                  <action>
+                    <verb>SetCurrentDate</verb>
+                    <params>
+                      <param xsi:type="attcode">assignment_date</param>
+                    </params>
+                  </action>
+                </actions>
+              </transition>
+            </transitions>
+          </state>
+          <state id="assigned">
+            <inherit_flags_from>new</inherit_flags_from>
+            <flags>
+              <attribute id="team_id">
+                <mandatory/>
+                <must_prompt/>
+                <read_only/>
+              </attribute>
+              <attribute id="agent_id">
+                <mandatory/>
+                <must_prompt/>
+                <read_only/>
+              </attribute>
+              <attribute id="approver_id">
+                <read_only/>
+              </attribute>
+              <attribute id="assignment_date">
+                <read_only/>
+              </attribute>
+              <attribute id="tto_escalation_deadline">
+                <hidden/>
+              </attribute>
+              <attribute id="sla_tto_passed">
+                <read_only/>
+              </attribute>
+              <attribute id="sla_tto_over">
+                <read_only/>
+              </attribute>
+              <attribute id="ttr_escalation_deadline">
+                <read_only/>
+              </attribute>
+              <attribute id="caller_id"/>
+              <attribute id="escalation_flag"/>
+              <attribute id="escalation_reason"/>
+            </flags>
+            <transitions>
+              <transition id="ev_pending">
+                <target>pending</target>
+                <actions>
+                  <action>
+                    <verb>SetCurrentDate</verb>
+                    <params>
+                      <param xsi:type="attcode">last_pending_date</param>
+                    </params>
+                  </action>
+                </actions>
+              </transition>
+              <transition id="ev_resolve">
+                <target>resolved</target>
+                <actions>
+                  <action>
+                    <verb>SetCurrentDate</verb>
+                    <params>
+                      <param xsi:type="attcode">resolution_date</param>
+                    </params>
+                  </action>
+                  <action>
+                    <verb>SetElapsedTime</verb>
+                    <params>
+                      <param xsi:type="attcode">time_spent</param>
+                      <param xsi:type="attcode">start_date</param>
+                      <param xsi:type="string">DefaultWorkingTimeComputer</param>
+                    </params>
+                  </action>
+                  <action>
+                    <verb>ResolveChildTickets</verb>
+                    <params/>
+                  </action>
+                </actions>
+              </transition>
+              <transition id="ev_reassign">
+                <target>assigned</target>
+                <flags>
+                  <attribute id="agent_id">
+                    <must_change/>
+                  </attribute>
+                  <attribute id="team_id">
+                    <must_prompt/>
+                  </attribute>
+                </flags>
+                <actions/>
+              </transition>
+              <transition id="ev_timeout">
+                <target>escalated_ttr</target>
+                <actions/>
+              </transition>
+              <transition id="ev_autoresolve">
+                <target>resolved</target>
+                <actions>
+                  <action>
+                    <verb>SetCurrentDate</verb>
+                    <params>
+                      <param xsi:type="attcode">resolution_date</param>
+                    </params>
+                  </action>
+                  <action>
+                    <verb>SetElapsedTime</verb>
+                    <params>
+                      <param xsi:type="attcode">time_spent</param>
+                      <param xsi:type="attcode">start_date</param>
+                      <param xsi:type="string">DefaultWorkingTimeComputer</param>
+                    </params>
+                  </action>
+                  <action>
+                    <verb>ResolveChildTickets</verb>
+                    <params/>
+                  </action>
+                </actions>
+              </transition>
+            </transitions>
+          </state>
+          <state id="escalated_ttr">
+            <highlight>
+              <code>critical</code>
+            </highlight>
+            <inherit_flags_from>assigned</inherit_flags_from>
+            <flags/>
+            <transitions>
+              <transition id="ev_pending">
+                <target>pending</target>
+                <actions>
+                  <action>
+                    <verb>SetCurrentDate</verb>
+                    <params>
+                      <param xsi:type="attcode">last_pending_date</param>
+                    </params>
+                  </action>
+                </actions>
+              </transition>
+              <transition id="ev_resolve">
+                <target>resolved</target>
+                <actions>
+                  <action>
+                    <verb>SetCurrentDate</verb>
+                    <params>
+                      <param xsi:type="attcode">resolution_date</param>
+                    </params>
+                  </action>
+                  <action>
+                    <verb>SetElapsedTime</verb>
+                    <params>
+                      <param xsi:type="attcode">time_spent</param>
+                      <param xsi:type="attcode">start_date</param>
+                      <param xsi:type="string">DefaultWorkingTimeComputer</param>
+                    </params>
+                  </action>
+                  <action>
+                    <verb>ResolveChildTickets</verb>
+                    <params/>
+                  </action>
+                </actions>
+              </transition>
+              <transition id="ev_reassign">
+                <target>assigned</target>
+                <actions/>
+              </transition>
+              <transition id="ev_autoresolve">
+                <target>resolved</target>
+                <actions>
+                  <action>
+                    <verb>SetCurrentDate</verb>
+                    <params>
+                      <param xsi:type="attcode">resolution_date</param>
+                    </params>
+                  </action>
+                  <action>
+                    <verb>SetElapsedTime</verb>
+                    <params>
+                      <param xsi:type="attcode">time_spent</param>
+                      <param xsi:type="attcode">start_date</param>
+                      <param xsi:type="string">DefaultWorkingTimeComputer</param>
+                    </params>
+                  </action>
+                  <action>
+                    <verb>ResolveChildTickets</verb>
+                    <params/>
+                  </action>
+                </actions>
+              </transition>
+            </transitions>
+          </state>
+          <state id="waiting_for_approval">
+            <inherit_flags_from>new</inherit_flags_from>
+            <flags>
+              <attribute id="approver_id">
+                <must_prompt/>
+              </attribute>
+              <attribute id="team_id"/>
+            </flags>
+            <transitions>
+              <transition id="ev_approve">
+                <target>approved</target>
+                <actions/>
+              </transition>
+              <transition id="ev_reject">
+                <target>rejected</target>
+                <actions/>
+              </transition>
+            </transitions>
+          </state>
+          <state id="approved">
+            <inherit_flags_from>waiting_for_approval</inherit_flags_from>
+            <flags>
+              <attribute id="approver_id">
+                <read_only/>
+              </attribute>
+            </flags>
+            <transitions>
+              <transition id="ev_timeout">
+                <target>escalated_tto</target>
+                <actions/>
+              </transition>
+              <transition id="ev_assign">
+                <target>assigned</target>
+                <actions>
+                  <action>
+                    <verb>SetCurrentDate</verb>
+                    <params>
+                      <param xsi:type="attcode">assignment_date</param>
+                    </params>
+                  </action>
+                </actions>
+              </transition>
+              <transition id="ev_autoresolve">
+                <target>resolved</target>
+                <actions>
+                  <action>
+                    <verb>SetCurrentDate</verb>
+                    <params>
+                      <param xsi:type="attcode">resolution_date</param>
+                    </params>
+                  </action>
+                  <action>
+                    <verb>SetElapsedTime</verb>
+                    <params>
+                      <param xsi:type="attcode">time_spent</param>
+                      <param xsi:type="attcode">start_date</param>
+                      <param xsi:type="string">DefaultWorkingTimeComputer</param>
+                    </params>
+                  </action>
+                  <action>
+                    <verb>ResolveChildTickets</verb>
+                    <params/>
+                  </action>
+                </actions>
+              </transition>
+            </transitions>
+          </state>
+          <state id="rejected">
+            <inherit_flags_from>new</inherit_flags_from>
+            <flags>
+              <attribute id="tto_escalation_deadline">
+                <hidden/>
+              </attribute>
+              <attribute id="team_id"/>
+            </flags>
+            <transitions>
+              <transition id="ev_reopen">
+                <target>new</target>
+                <actions/>
+              </transition>
+            </transitions>
+          </state>
+          <state id="pending">
+            <inherit_flags_from>assigned</inherit_flags_from>
+            <flags>
+              <attribute id="last_pending_date">
+                <read_only/>
+              </attribute>
+              <attribute id="pending_reason">
+                <mandatory/>
+                <must_prompt/>
+              </attribute>
+              <attribute id="ttr_escalation_deadline">
+                <hidden/>
+              </attribute>
+            </flags>
+            <transitions>
+              <transition id="ev_assign">
+                <target>assigned</target>
+                <actions>
+                </actions>
+              </transition>
+              <transition id="ev_autoresolve">
+                <target>resolved</target>
+                <actions>
+                  <action>
+                    <verb>SetCurrentDate</verb>
+                    <params>
+                      <param xsi:type="attcode">resolution_date</param>
+                    </params>
+                  </action>
+                  <action>
+                    <verb>SetElapsedTime</verb>
+                    <params>
+                      <param xsi:type="attcode">time_spent</param>
+                      <param xsi:type="attcode">start_date</param>
+                      <param xsi:type="string">DefaultWorkingTimeComputer</param>
+                    </params>
+                  </action>
+                  <action>
+                    <verb>ResolveChildTickets</verb>
+                    <params/>
+                  </action>
+                </actions>
+              </transition>
+            </transitions>
+          </state>
+          <state id="resolved">
+            <highlight>
+              <code>closed</code>
+            </highlight>
+            <inherit_flags_from>assigned</inherit_flags_from>
+            <flags>
+              <attribute id="caller_id">
+                <read_only/>
+              </attribute>
+              <attribute id="origin">
+                <read_only/>
+              </attribute>
+              <attribute id="impact">
+                <read_only/>
+              </attribute>
+              <attribute id="urgency">
+                <read_only/>
+              </attribute>
+              <attribute id="service_id">
+                <mandatory/>
+                <must_prompt/>
+              </attribute>
+              <attribute id="servicesubcategory_id">
+                <must_prompt/>
+              </attribute>
+              <attribute id="escalation_flag">
+                <read_only/>
+              </attribute>
+              <attribute id="escalation_reason">
+                <read_only/>
+              </attribute>
+              <attribute id="parent_request_id">
+                <read_only/>
+              </attribute>
+              <attribute id="parent_change_id">
+                <read_only/>
+              </attribute>
+              <attribute id="parent_problem_id">
+                <read_only/>
+              </attribute>
+              <attribute id="title">
+                <read_only/>
+              </attribute>
+              <attribute id="description">
+                <read_only/>
+              </attribute>
+              <attribute id="org_id">
+                <read_only/>
+              </attribute>
+              <attribute id="team_id">
+                <read_only/>
+              </attribute>
+              <attribute id="agent_id">
+                <read_only/>
+              </attribute>
+              <attribute id="resolution_date">
+                <read_only/>
+              </attribute>
+              <attribute id="time_spent">
+                <read_only/>
+              </attribute>
+              <attribute id="resolution_code">
+                <mandatory/>
+                <must_prompt/>
+              </attribute>
+              <attribute id="solution">
+                <mandatory/>
+                <must_prompt/>
+              </attribute>
+              <attribute id="effort">
+                <mandatory/>
+                <must_prompt/>
+              </attribute>
+              <attribute id="pending_reason">
+                <read_only/>
+              </attribute>
+              <attribute id="sla_ttr_passed">
+                <read_only/>
+              </attribute>
+              <attribute id="ttr_escalation_deadline">
+                <hidden/>
+              </attribute>
+              <attribute id="sla_ttr_over">
+                <read_only/>
+              </attribute>
+            </flags>
+            <transitions>
+              <transition id="ev_close">
+                <target>closed</target>
+                <actions>
+                  <action>
+                    <verb>SetCurrentDate</verb>
+                    <params>
+                      <param xsi:type="attcode">close_date</param>
+                    </params>
+                  </action>
+                </actions>
+              </transition>
+              <transition id="ev_reopen">
+                <target>assigned</target>
+                <actions>
+                </actions>
+              </transition>
+              <transition id="ev_autoresolve">
+                <target>resolved</target>
+                <actions>
+                  <action>
+                    <verb>SetCurrentDate</verb>
+                    <params>
+                      <param xsi:type="attcode">resolution_date</param>
+                    </params>
+                  </action>
+                  <action>
+                    <verb>SetElapsedTime</verb>
+                    <params>
+                      <param xsi:type="attcode">time_spent</param>
+                      <param xsi:type="attcode">start_date</param>
+                      <param xsi:type="string">DefaultWorkingTimeComputer</param>
+                    </params>
+                  </action>
+                  <action>
+                    <verb>ResolveChildTickets</verb>
+                    <params/>
+                  </action>
+                </actions>
+              </transition>
+            </transitions>
+          </state>
+          <state id="closed">
+            <highlight>
+              <code>closed</code>
+            </highlight>
+            <inherit_flags_from>resolved</inherit_flags_from>
+            <flags>
+              <attribute id="private_log">
+                <read_only/>
+              </attribute>
+              <attribute id="public_log">
+                <read_only/>
+              </attribute>
+              <attribute id="functionalcis_list">
+                <read_only/>
+              </attribute>
+              <attribute id="contacts_list">
+                <read_only/>
+              </attribute>
+              <attribute id="servicefamily_id">
+                <read_only/>
+              </attribute>
+              <attribute id="service_id">
+                <read_only/>
+              </attribute>
+              <attribute id="servicesubcategory_id">
+                <read_only/>
+              </attribute>
+              <attribute id="close_date">
+                <read_only/>
+              </attribute>
+              <attribute id="resolution_code">
+                <read_only/>
+              </attribute>
+              <attribute id="solution">
+                <read_only/>
+              </attribute>
+              <attribute id="needbydate">
+                <read_only/>
+              </attribute>
+              <attribute id="effort">
+                <read_only/>
+              </attribute>
+              <attribute id="pending_reason">
+                <read_only/>
+                <read_only/>
+              </attribute>
+              <attribute id="user_satisfaction">
+                <read_only/>
+                <must_prompt/>
+              </attribute>
+              <attribute id="user_comment">
+                <read_only/>
+                <must_prompt/>
+              </attribute>
+            </flags>
+            <transitions/>
+          </state>
+        </states>
+      </lifecycle>    
+      <presentation _delta="redefine">
+        <details>
+          <items>
+            <item id="functionalcis_list">
+              <rank>10</rank>
+            </item>
+            <item id="contacts_list">
+              <rank>20</rank>
+            </item>
+            <item id="related_request_list">
+              <rank>30</rank>
+            </item>
+            <item id="workorders_list">
+              <rank>40</rank>
+            </item>
+            <item id="col:col1">
+              <rank>50</rank>
+              <items>
+                <item id="fieldset:Ticket:baseinfo">
+                  <rank>10</rank>
+                  <items>
+                    <item id="org_id">
+                      <rank>10</rank>
+                    </item>
+                    <item id="caller_id">
+                      <rank>20</rank>
+                    </item>
+                    <item id="status">
+                      <rank>30</rank>
+                    </item>
+                    <item id="origin">
+                      <rank>40</rank>
+                    </item>
+                    <item id="title">
+                      <rank>50</rank>
+                    </item>
+                    <item id="description">
+                      <rank>60</rank>
+                    </item>
+                  </items>
+                </item>
+                <item id="fieldset:Ticket:moreinfo">
+                  <rank>20</rank>
+                  <items>
+                    <item id="servicefamily_id">
+                      <rank>05</rank>
+                    </item>
+                    <item id="service_id">
+                      <rank>10</rank>
+                    </item>
+                    <item id="servicesubcategory_id">
+                      <rank>20</rank>
+                    </item>
+                    <item id="escalation_flag">
+                      <rank>30</rank>
+                    </item>
+                    <item id="escalation_reason">
+                      <rank>40</rank>
+                    </item>
+                    <item id="pending_reason">
+                      <rank>50</rank>
+                    </item>
+                  </items>
+                </item>
+              </items>
+            </item>
+            <item id="col:col2">
+              <rank>60</rank>
+              <items>
+                <item id="fieldset:Ticket:Type">
+                  <rank>10</rank>
+                  <items>
+                    <item id="request_type">
+                      <rank>10</rank>
+                    </item>
+                    <item id="impact">
+                      <rank>20</rank>
+                    </item>
+                    <item id="urgency">
+                      <rank>30</rank>
+                    </item>
+                    <item id="priority">
+                      <rank>40</rank>
+                    </item>
+                  </items>
+                </item>
+                <item id="fieldset:Ticket:contact">
+                  <rank>20</rank>
+                  <items>
+                    <item id="team_id">
+                      <rank>10</rank>
+                    </item>
+                    <item id="agent_id">
+                      <rank>20</rank>
+                    </item>
+                    <item id="approver_id">
+                      <rank>30</rank>
+                    </item>
+                  </items>
+                </item>
+                <item id="fieldset:Ticket:date">
+                  <rank>30</rank>
+                  <items>
+                    <item id="start_date">
+                      <rank>10</rank>
+                    </item>
+                    <item id="last_update">
+                      <rank>20</rank>
+                    </item>
+                    <item id="assignment_date">
+                      <rank>30</rank>
+                    </item>
+                    <item id="tto_escalation_deadline">
+                      <rank>40</rank>
+                    </item>
+                    <item id="ttr_escalation_deadline">
+                      <rank>50</rank>
+                    </item>
+                    <item id="last_pending_date">
+                      <rank>60</rank>
+                    </item>
+                    <item id="needbydate">
+                      <rank>65</rank>
+                    </item>
+                    <item id="resolution_date">
+                      <rank>70</rank>
+                    </item>
+                    <item id="close_date">
+                      <rank>80</rank>
+                    </item>
+                  </items>
+                </item>
+              </items>
+            </item>
+            <item id="col:col3">
+              <rank>70</rank>
+              <items>
+                <item id="fieldset:Ticket:relation">
+                  <rank>10</rank>
+                  <items>
+                    <item id="parent_request_id">
+                      <rank>10</rank>
+                    </item>
+                    <item id="parent_incident_id">
+                      <rank>20</rank>
+                    </item>
+                    <item id="parent_problem_id">
+                      <rank>30</rank>
+                    </item>
+                    <item id="parent_change_id">
+                      <rank>40</rank>
+                    </item>
+                  </items>
+                </item>
+                <item id="fieldset:Ticket:resolution">
+                  <rank>20</rank>
+                  <items>
+                    <item id="resolution_code">
+                      <rank>10</rank>
+                    </item>
+                    <item id="solution">
+                      <rank>20</rank>
+                    </item>
+                    <item id="time_spent">
+                      <rank>30</rank>
+                    </item>
+                    <item id="effort">
+                      <rank>35</rank>
+                    </item>
+                    <item id="user_satisfaction">
+                      <rank>40</rank>
+                    </item>
+                    <item id="user_comment">
+                      <rank>50</rank>
+                    </item>
+                  </items>
+                </item>
+                <item id="fieldset:Ticket:SLA">
+                  <rank>30</rank>
+                  <items>
+                    <item id="sla_tto_passed">
+                      <rank>10</rank>
+                    </item>
+                    <item id="sla_tto_over">
+                      <rank>20</rank>
+                    </item>
+                    <item id="sla_ttr_passed">
+                      <rank>30</rank>
+                    </item>
+                    <item id="sla_ttr_over">
+                      <rank>40</rank>
+                    </item>
+                  </items>
+                </item>
+              </items>
+            </item>
+          </items>
+        </details>
+        <search>
+          <items>
+            <item id="ref">
+              <rank>10</rank>
+            </item>
+            <item id="org_id">
+              <rank>20</rank>
+            </item>
+            <item id="title">
+              <rank>30</rank>
+            </item>
+            <item id="description">
+              <rank>40</rank>
+            </item>
+            <item id="start_date">
+              <rank>50</rank>
+            </item>
+            <item id="resolution_date">
+              <rank>70</rank>
+            </item>
+            <item id="close_date">
+              <rank>80</rank>
+            </item>
+            <item id="status">
+              <rank>90</rank>
+            </item>
+            <item id="operational_status">
+              <rank>95</rank>
+            </item>
+            <item id="caller_id">
+              <rank>100</rank>
+            </item>
+            <item id="origin">
+              <rank>110</rank>
+            </item>
+            <item id="request_type">
+              <rank>120</rank>
+            </item>
+            <item id="impact">
+              <rank>130</rank>
+            </item>
+            <item id="urgency">
+              <rank>140</rank>
+            </item>
+            <item id="priority">
+              <rank>150</rank>
+            </item>
+            <item id="service_id">
+              <rank>160</rank>
+            </item>
+            <item id="servicesubcategory_id">
+              <rank>170</rank>
+            </item>
+            <item id="team_id">
+              <rank>180</rank>
+            </item>
+            <item id="agent_id">
+              <rank>190</rank>
+            </item>
+            <item id="escalation_flag">
+              <rank>200</rank>
+            </item>
+            <item id="resolution_code">
+              <rank>210</rank>
+            </item>
+            <item id="user_satisfaction">
+              <rank>220</rank>
+            </item>
+            <item id="sla_tto_passed">
+              <rank>230</rank>
+            </item>
+            <item id="sla_ttr_passed">
+              <rank>240</rank>
+            </item>
+          </items>
+        </search>
+        <list>
+          <items>
+            <item id="title">
+              <rank>10</rank>
+            </item>
+            <item id="org_id">
+              <rank>20</rank>
+            </item>
+            <item id="caller_id">
+              <rank>30</rank>
+            </item>
+            <item id="start_date">
+              <rank>40</rank>
+            </item>
+            <item id="status">
+              <rank>50</rank>
+            </item>
+            <item id="agent_id">
+              <rank>60</rank>
+            </item>
+          </items>
+        </list>
+      </presentation>
+    </class>
+  </classes>
+  <user_rights>
+    <groups>
+    </groups>
+    <profiles>
+    </profiles>
+  </user_rights>
+</itop_design>
